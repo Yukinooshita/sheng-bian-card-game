@@ -178,7 +178,7 @@ async function main() {
 
     const hi = activeView.me.hand.findIndex((c) => {
       const def = hello.cards[c.cid];
-      return def.type === 'unit' && def.level === 1;
+      return def.type === 'unit' && def.level === 1 && !(def.kw && def.kw.swift);
     });
     if (hi >= 0) {
       assert(activeView.me.ap === 3, '回合开始应有 3 行动点');
