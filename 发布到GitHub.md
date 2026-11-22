@@ -17,35 +17,58 @@ git --version
 
 ---
 
-## 1. 在 GitHub 上创建一个空仓库
+## 1. 仓库已经建好了
 
-1. 打开 <https://github.com/new>
-2. Repository name 建议：`sheng-bian-card-game`（也可以用 `upvard-card-game`，随便）
-3. 选 **Public**（你刚才选的是公开）
-4. **不要**勾选 "Add a README file"、".gitignore"、"license"——本地已经有了，勾了会冲突
-5. 点 Create repository
-
-建完页面会给你一个地址，形如：
+已经用你的账号（`Yukinooshita`）建好了公开仓库：
 
 ```
-https://github.com/<你的用户名>/sheng-bian-card-game.git
+https://github.com/Yukinooshita/sheng-bian-card-game
 ```
+
+本地也已经把 `origin` 指过去了：
+
+```bash
+git remote -v
+# origin  https://github.com/Yukinooshita/sheng-bian-card-game.git (fetch)
+# origin  https://github.com/Yukinooshita/sheng-bian-card-game.git (push)
+```
+
+**还差最后一步：`git push`。** 这台机器直连 github.com 会被限速/掐断（详见最后一节），所以推送没完成。
 
 ---
 
 ## 2. 把本地仓库推上去
 
+网络正常（开了加速器 / VPN）时：
+
 ```bash
 cd "C:\Users\jsf2026\Doubao\chats\2026-11-21\new-chat-1\升变卡牌"
-
-git remote add origin https://github.com/<你的用户名>/sheng-bian-card-game.git
 git push -u origin main
 ```
 
-第一次 push 会弹一个窗口让你登录 GitHub（Git Credential Manager 会打开浏览器，点 Authorize 即可）。
-也可以用 Personal Access Token 当密码：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained → 勾 `Contents: Read and write`。
+第一次会弹 GitHub 登录（或直接走已配好的凭证管理器）。
 
-> `runtime/node.exe` 是 83 MB，第一次推送会比较慢（几分钟，看上传带宽）。GitHub 单文件上限 100 MB，这个尺寸没问题，但每次 clone 都会把 83 MB 一起拉下来。以后如果觉得太重，可以改用 Git LFS 或换成下载 Release 里的整合包。
+如果走 SSH（本机已经生成好密钥 `C:\Users\jsf2026\.ssh\upvard_ed25519`，公钥还没加到账号）：
+
+1. 打开 <https://github.com/settings/ssh/new>，把 `C:\Users\jsf2026\.ssh\upvard_ed25519.pub` 的内容粘进去，标题随便（例如 `upvard-dev (Windows)`）。
+2. 把远程换成 SSH 并强制走 443 端口（本机只有这个端口通）：
+
+```bash
+git remote set-url origin git@github.com:Yukinooshita/sheng-bian-card-game.git
+```
+
+在 `C:\Users\jsf2026\.ssh\config` 里加：
+
+```
+Host github.com
+  HostName ssh.github.com
+  Port 443
+  User git
+  IdentityFile C:/Users/jsf2026/.ssh/upvard_ed25519
+  IdentitiesOnly yes
+```
+
+然后 `ssh -T git@github.com` 看到 `Hi Yukinooshita!` 就通了，再 `git push -u origin main`。
 
 ---
 
@@ -107,22 +130,22 @@ npm test                    # 41 + 44 条断言 + 机器人 + 联机
 
 ## 常见问题
 
-**push 报 `src refspec main does not match any`**
-说明本地还没有提交或分支名不对，先 `git log --oneline` 确认有提交、`git branch --show-current` 确认是 `main`。
+**push 卡住 / 报 `Recv failure: Connection was reset` / `Operation timed out`**
+这台机器到 `github.com` 的连接会被掐断：能连上、传几百 KB 就断。实测：
+`api.github.com`、`codeload.github.com`、`raw.githubusercontent.com` 正常，`github.com` 超时，`ssh.github.com:443` 能连通。
+解决办法：开加速器 / VPN 后再推，或走上面的 SSH 443 方案。`runtime/node.exe` 有 83 MB，在这条链路上本身就很难推上去。
 
-**push 报 `Authentication failed`**
-凭证管理器没弹窗：手动执行 `git credential-manager configure`，或改用 PAT 当密码。
-
-**推送卡在 `Writing objects: 100%` 很久**
-83 MB 的 `node.exe` 在上传，等它。断网重来会从头传，尽量一次推完。
-
-**不想再带 83 MB**
+**想减小推送体积（不要 83 MB 的 node.exe）**
 ```bash
-git rm --cached runtime/node.exe
+git rm -r --cached runtime
 echo runtime/ >> .gitignore
-git commit -m "chore: 不再入库 runtime"
+git commit -m "chore: runtime 不入库"
+git push -u origin main
 ```
-但这样别人 clone 后必须自己装 Node 才能双击 bat（`启动游戏.bat` 会回退到系统 `node`）。
+之后 Release 里传一个整合包给别人下载即可。
+
+**push 报 `src refspec main does not match any`**
+先 `git log --oneline` 确认有提交、`git branch --show-current` 确认是 `main`。
 
 **仓库已经推到一半失败，重新推**
 `git push -u origin main` 再执行一次即可，已上传的对象不会重复传。
