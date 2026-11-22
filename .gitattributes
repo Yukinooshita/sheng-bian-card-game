@@ -1,0 +1,19 @@
+# 默认按文本处理，统一 LF，检出时由各平台转换
+* text=auto
+
+# Windows 批处理必须保持 CRLF，否则 cmd 解析会出问题
+*.bat text eol=crlf
+
+# 源码/文档统一 LF
+*.js text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+
+# 自带的可执行文件是二进制，别做行尾转换
+runtime/* binary
+*.exe binary
+*.png binary
+*.jpg binary

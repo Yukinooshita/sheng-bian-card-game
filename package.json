@@ -1,0 +1,21 @@
+{
+  "name": "sheng-bian-card-game",
+  "version": "0.1.0",
+  "private": true,
+  "description": "升变卡牌：零依赖、服务端权威的 1v1 联机卡牌原型（含机器人自测与观战）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:8080": "node server.js 8080",
+    "test": "node test/rules.js && node test/rules_new.js && node test/sim.js 40 && node test/net.js",
+    "test:rules": "node test/rules.js && node test/rules_new.js",
+    "test:sim": "node test/sim.js 100",
+    "test:net": "node test/net.js",
+    "test:ui": "node test/cdp.js",
+    "cards": "node test/export_cards.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

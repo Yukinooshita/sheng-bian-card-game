@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>升变卡牌 · 原型</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0f14'/%3E%3Cpath d='M32 10 L40 30 L32 26 L24 30 Z' fill='%23e8b45a'/%3E%3Cpath d='M32 54 L24 34 L32 38 L40 34 Z' fill='%23e8b45a' opacity='.55'/%3E%3C/svg%3E">
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <span class="brand-name">升变卡牌</span>
+      <span class="brand-tag">原型 v0.1</span>
+    </div>
+    <div class="top-right">
+      <span id="connDot" class="dot" title="连接状态"></span>
+      <span id="roomLabel" class="room-label"></span>
+    </div>
+  </header>
+
+  <!-- ================= 大厅 ================= -->
+  <section id="lobby" class="screen">
+    <div class="lobby-hero">
+      <h1>升变</h1>
+      <p class="hero-sub">Ⅰ 到 Ⅴ，把单位叠上去，然后敲碎对方 10 点生命。</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">你的名字</div>
+      <input id="nameInput" class="input" maxlength="12" placeholder="例如：阿淮" autocomplete="off">
+      <div class="row gap">
+        <button id="createBtn" class="btn primary">创建房间</button>
+        <div class="join-row">
+          <input id="codeInput" class="input code" maxlength="6" placeholder="房间码" autocomplete="off">
+          <button id="joinBtn" class="btn">加入</button>
+          <button id="watchBtn" class="btn ghost" title="只看不打">观战</button>
+        </div>
+      </div>
+      <p class="hint">同一个 WiFi 下，把网址发给朋友即可；异地联机看《使用说明》。房间满了也能“观战”，只看不打。</p>
+    </div>
+
+    <div id="roomPanel" class="panel hidden">
+      <div class="panel-title">房间 <span id="roomCode" class="code-badge"></span></div>
+      <div class="seats">
+        <div class="seat" id="seatP1"></div>
+        <div class="vs">VS</div>
+        <div class="seat" id="seatP2"></div>
+      </div>
+
+      <div class="panel-sub">选择卡组</div>
+      <div id="deckList" class="deck-list"></div>
+
+      <div class="row gap end">
+        <button id="readyBtn" class="btn primary">准备</button>
+      </div>
+      <p class="hint" id="roomHint"></p>
+    </div>
+
+    <div class="rules-teaser">
+      <div class="rt-item"><b>3</b><span>每回合行动点</span></div>
+      <div class="rt-item"><b>10</b><span>玩家生命</span></div>
+      <div class="rt-item"><b>24+3</b><span>单位 + 指令</span></div>
+      <div class="rt-item"><b>Ⅰ→Ⅴ</b><span>升变等级</span></div>
+    </div>
+  </section>
+
+  <!-- ================= 牌桌 ================= -->
+  <section id="table" class="screen hidden">
+
+    <div class="foe-panel" id="foePanel">
+      <div class="p-main">
+        <div class="p-name" id="foeName">对手</div>
+        <div class="p-life"><span id="foeLife">10</span><i>生命</i></div>
+        <div class="p-ap" id="foeAp"></div>
+      </div>
+      <div class="p-zones">
+        <button class="zone-chip" data-zone="foeDeck" title="牌库">牌库 <b id="foeDeck">0</b></button>
+        <button class="zone-chip" data-zone="foeDiscard" title="弃牌区">弃 <b id="foeDiscard">0</b></button>
+        <button class="zone-chip" data-zone="foeGrave" title="阵亡区">墓 <b id="foeGrave">0</b></button>
+        <span class="zone-chip quiet">手牌 <b id="foeHand">0</b></span>
+      </div>
+    </div>
+
+    <div class="field foe-field" id="foeField"></div>
+
+    <div class="mid-bar">
+      <div class="turn-chip" id="turnChip">等待开始</div>
+      <div class="mid-actions" id="midActions"></div>
+    </div>
+
+    <div class="field my-field" id="myField"></div>
+
+    <div class="my-panel">
+      <div class="p-main">
+        <div class="p-name" id="myName">你</div>
+        <div class="p-life"><span id="myLife">10</span><i>生命</i></div>
+        <div class="p-ap" id="myAp"></div>
+      </div>
+      <div class="p-zones">
+        <button class="zone-chip" data-zone="myDeck">牌库 <b id="myDeck">0</b></button>
+        <button class="zone-chip" data-zone="myDiscard">弃 <b id="myDiscard">0</b></button>
+        <button class="zone-chip" data-zone="myGrave">墓 <b id="myGrave">0</b></button>
+        <button class="zone-chip" data-zone="myExile">除 <b id="myExile">0</b></button>
+      </div>
+    </div>
+
+    <div class="hand-wrap">
+      <div class="hand" id="myHand"></div>
+    </div>
+
+    <div class="hint-bar" id="hintBar">选择一张手牌开始。</div>
+
+    <div class="log-panel">
+      <div class="log-head">战报</div>
+      <div class="log-list" id="logList"></div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast"></div>
+  <div id="overlay" class="overlay hidden">
+    <div class="overlay-card" id="overlayCard"></div>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

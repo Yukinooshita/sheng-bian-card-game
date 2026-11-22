@@ -1,0 +1,28 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 规则断言（基础）
+        run: node test/rules.js
+
+      - name: 规则断言（新卡组/新机制）
+        run: node test/rules_new.js
+
+      - name: 机器人自动对局（40 局，8 套卡组轮转）
+        run: node test/sim.js 40
+
+      - name: 联机端到端 + 观战
+        run: node test/net.js
