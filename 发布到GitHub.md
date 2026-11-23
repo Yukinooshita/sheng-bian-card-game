@@ -17,41 +17,40 @@ git --version
 
 ---
 
-## 1. 仓库已经建好了
+## 1. 仓库已经建好并已推送
 
-已经用你的账号（`Yukinooshita`）建好了公开仓库：
+公开仓库：<https://github.com/Yukinooshita/sheng-bian-card-game>
 
-```
-https://github.com/Yukinooshita/sheng-bian-card-game
-```
+本地 `origin` 已指向它，`main` 已推上去，提交作者已改成 `Yukinooshita`。
+GitHub Actions 的 `tests` 工作流在首次推送和强推后各跑了一次，都是 ✅（41 + 44 条断言、机器人对局、联机 + 观战）。
 
-本地也已经把 `origin` 指过去了：
-
-```bash
-git remote -v
-# origin  https://github.com/Yukinooshita/sheng-bian-card-game.git (fetch)
-# origin  https://github.com/Yukinooshita/sheng-bian-card-game.git (push)
-```
-
-**还差最后一步：`git push`。** 这台机器直连 github.com 会被限速/掐断（详见最后一节），所以推送没完成。
+> 首次推送踩到的坑：这台机器直连 `github.com` 会被限速掐断；开了加速器后，加速器会替换 TLS 证书，git 需要临时跳过校验。所以本机以后推送用：
+>
+> ```bash
+> git -c http.sslVerify=false push
+> ```
+>
+> 这只影响那一条命令，没有写进全局配置。
 
 ---
 
-## 2. 把本地仓库推上去
-
-网络正常（开了加速器 / VPN）时：
+## 2. 日常提交
 
 ```bash
 cd "C:\Users\jsf2026\Doubao\chats\2026-11-21\new-chat-1\升变卡牌"
-git push -u origin main
+git add -A
+git commit -m "cards: 削弱杏子 40/35 -> 35/30"
+git -c http.sslVerify=false push
 ```
 
-第一次会弹 GitHub 登录（或直接走已配好的凭证管理器）。
+改完卡池记得 `node test/export_cards.js` 重新生成 `卡表.md`，`npm test` 跑一遍。
 
-如果走 SSH（本机已经生成好密钥 `C:\Users\jsf2026\.ssh\upvard_ed25519`，公钥还没加到账号）：
+### 走 SSH（想彻底摆脱证书问题）
+
+本机已经生成好密钥 `C:\Users\jsf2026\.ssh\upvard_ed25519`，公钥还没加到账号：
 
 1. 打开 <https://github.com/settings/ssh/new>，把 `C:\Users\jsf2026\.ssh\upvard_ed25519.pub` 的内容粘进去，标题随便（例如 `upvard-dev (Windows)`）。
-2. 把远程换成 SSH 并强制走 443 端口（本机只有这个端口通）：
+2. 把远程换成 SSH，并强制走 443 端口（本机只有这个端口稳）：
 
 ```bash
 git remote set-url origin git@github.com:Yukinooshita/sheng-bian-card-game.git
@@ -68,7 +67,7 @@ Host github.com
   IdentitiesOnly yes
 ```
 
-然后 `ssh -T git@github.com` 看到 `Hi Yukinooshita!` 就通了，再 `git push -u origin main`。
+`ssh -T git@github.com` 看到 `Hi Yukinooshita!` 就通了，之后直接 `git push`，不用再带任何参数。
 
 ---
 
