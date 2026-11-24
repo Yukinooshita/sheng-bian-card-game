@@ -5,7 +5,7 @@ node_modules/
 /runtime/
 
 # 测试临时产物
-test/edge_profile/
+test/edge_profile*/
 test/*.png
 test/*.log
 *.log

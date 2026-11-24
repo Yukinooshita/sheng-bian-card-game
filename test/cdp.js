@@ -275,6 +275,64 @@ async function main() {
     await sleep(700);
     await shot('shot_table_deploy.png');
 
+    // 5.5 选中一张手牌 → 卡牌详情条必须展示完整说明（不能被 line-clamp 截断）
+    const selName = await evalJs(`
+      (function(){
+        const c=[...document.querySelectorAll('#myHand .card')].find(el=>{
+          const lv=el.querySelector('.c-lv');
+          return lv && lv.textContent.trim() && !el.classList.contains('cmd');
+        });
+        if(!c) return '';
+        c.click();
+        return c.querySelector('.c-name').textContent;
+      })()
+    `);
+    if (!selName) throw new Error('手牌里没有可选单位');
+    await sleep(300);
+    const det = JSON.parse(await evalJs(`(function(){
+      const box=document.getElementById('cardDetail');
+      const tx=box.querySelector('.cd-text');
+      return JSON.stringify({
+        hidden: box.classList.contains('hidden'),
+        name: (box.querySelector('.cd-name')||{textContent:''}).textContent,
+        act: (box.querySelector('.cd-act')||{textContent:''}).textContent,
+        kwRows: box.querySelectorAll('.cd-kw-row').length,
+        clamp: tx ? getComputedStyle(tx).webkitLineClamp : 'missing',
+        clipped: tx ? (tx.scrollHeight > tx.clientHeight + 2) : true,
+        textLen: tx ? tx.textContent.length : 0
+      });
+    })()`));
+    console.log('卡牌详情', det);
+    if (det.hidden) throw new Error('选中手牌后没有出现卡牌详情条');
+    if (det.name !== selName) throw new Error('详情条名称不对：' + det.name + ' / 期望 ' + selName);
+    if (det.textLen < 8) throw new Error('详情条没显示说明文字');
+    if (det.clamp !== 'none') throw new Error('详情文字仍被截断（line-clamp=' + det.clamp + '）');
+    if (!det.act) throw new Error('详情条没有“当前能否打出”的提示');
+    await shot('shot_card_detail.png');
+
+    // 5.6 卡组说明弹层：能列出本卡组全部卡牌 + 关键词释义
+    await evalJs(`document.getElementById('deckInfoBtn').click();`);
+    await sleep(400);
+    const deckInfo = JSON.parse(await evalJs(`(function(){
+      const ov=document.getElementById('overlay'), box=document.getElementById('overlayCard');
+      return JSON.stringify({
+        hidden: ov.classList.contains('hidden'),
+        wide: ov.classList.contains('wide'),
+        title: (box.querySelector('h2')||{textContent:''}).textContent,
+        heads: [...box.querySelectorAll('.deck-h')].map(h=>h.textContent),
+        rows: box.querySelectorAll('.deck-row').length,
+        kwRows: box.querySelectorAll('.cd-kw-row').length
+      });
+    })()`));
+    console.log('卡组说明', deckInfo);
+    if (deckInfo.hidden) throw new Error('点“卡组说明”没有打开弹层');
+    if (!deckInfo.title) throw new Error('卡组说明没有标题');
+    if (deckInfo.rows < 5) throw new Error('卡组说明的卡牌条目太少：' + deckInfo.rows);
+    if (deckInfo.kwRows < 1) throw new Error('卡组说明缺少关键词释义');
+    await shot('shot_deck_info.png');
+    await evalJs(`document.querySelector('#overlayCard .btn.small').click();`);
+    await sleep(300);
+
     const rects = await evalJs(`
       (function(){
         const r=(s)=>{const e=document.querySelector(s); if(!e) return null; const b=e.getBoundingClientRect(); return [Math.round(b.top),Math.round(b.bottom),Math.round(b.height)];};
@@ -286,6 +344,16 @@ async function main() {
     // 手机尺寸再看一眼
     await ws.call('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
     await sleep(600);
+    await evalJs(`
+      (function(){
+        const c=[...document.querySelectorAll('#myHand .card')].find(el=>{
+          const lv=el.querySelector('.c-lv');
+          return lv && lv.textContent.trim() && !el.classList.contains('cmd');
+        });
+        if(c) c.click();
+      })()
+    `);
+    await sleep(400);
     await shot('shot_table_mobile.png');
     await ws.call('Emulation.clearDeviceMetricsOverride');
 
@@ -357,6 +425,8 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error('❌ ' + e.message); process.exit(1); });
+main()
+  .then(() => process.exit(process.exitCode || 0))
+  .catch((e) => { console.error('❌ ' + e.message); process.exit(1); });
 
 

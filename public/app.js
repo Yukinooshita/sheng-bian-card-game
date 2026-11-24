@@ -12,6 +12,7 @@
     token: localStorage.getItem('sb_token') || '',
     cards: {},
     kwText: {},
+    kwDesc: {},
     decks: [],
     cfg: {},
     view: null,
@@ -187,6 +188,7 @@
       case 'hello':
         S.cards = msg.cards || {};
         S.kwText = msg.kwText || {};
+        S.kwDesc = msg.kwDesc || {};
         S.decks = msg.decks || [];
         S.cfg = msg.config || {};
         if (msg.token) { S.token = msg.token; localStorage.setItem('sb_token', msg.token); }
@@ -352,10 +354,12 @@
     renderField('foe');
     renderField('me');
     renderHand();
+    renderCardDetail();
     renderMid();
     renderHintAndBar();
     renderLog();
     renderOverlay();
+    $('deckInfoBtn').classList.toggle('hidden', !!v.spectator);
   }
 
   function unitDef(u) { return def(u.cardId); }
@@ -470,6 +474,201 @@
       card.onclick = () => onHandClick(i);
       wrap.appendChild(card);
     });
+  }
+
+  /* ---------------- 选中牌的完整说明（卡牌详情条） ---------------- */
+
+  function kwDescOf(k) { return (S.kwDesc && S.kwDesc[k]) || ''; }
+
+  /* 当前该为哪张牌展示详情：手牌选中 / 指令选目标 / 装备 / 攻击中的单位 */
+  function detailSource() {
+    if (!S.view) return null;
+    const v = S.view;
+    if (S.cmd && S.cmd.i != null && v.me.hand && v.me.hand[S.cmd.i]) {
+      return { cd: def(v.me.hand[S.cmd.i].cid), unit: null, mode: 'cmd' };
+    }
+    if (S.sel && (S.sel.type === 'hand' || S.sel.type === 'equip') && v.me.hand && v.me.hand[S.sel.i]) {
+      return { cd: def(v.me.hand[S.sel.i].cid), unit: null, mode: S.sel.type };
+    }
+    if (S.sel && S.sel.type === 'attack') {
+      const u = v.me.field.find((x) => x && x.uid === S.sel.uid);
+      if (u) return { cd: unitDef(u), unit: u, mode: 'attack' };
+    }
+    return null;
+  }
+
+  function detailAction(src) {
+    const v = S.view;
+    const cd = src.cd;
+    if (src.mode === 'attack') {
+      const u = src.unit;
+      if (!v.yourTurn || v.phase !== 'play') return '现在不是你的回合，不能攻击。';
+      if (u.stunned) return '眩晕中：本回合不能攻击。';
+      if ((u.attacksLeft || 0) <= 0) return '本回合已经行动过（攻击次数用完了）。';
+      if (u.sick && !(u.kw && u.kw.swift)) return '部署当回合不能攻击，要等下一回合（迅捷除外）。';
+      if ((u.suppress || 0) >= 2) return '压制 ' + u.suppress + ' 层：不能攻击。';
+      const cost = u.kw.immediate ? 0 : ((S.cfg.attackCost || 0) + (u.suppress || 0));
+      if (v.me.ap < cost) return '行动点不够：攻击需要 ' + cost + '，现在 ' + v.me.ap + '。';
+      return '可以攻击：点一个敌方单位，或点对手信息栏打脸。';
+    }
+    if (src.mode === 'cmd') {
+      return '指令目标：点一个' + (S.cmd.kind === 'enemyUnit' ? '敌方单位' : '己方单位') + '。';
+    }
+    if (src.mode === 'equip') {
+      const min = (cd.kw && cd.kw.equipMinLevel) || 2;
+      return '装备：点一个 ' + min + ' 级及以上的己方单位，把它挂上去。';
+    }
+    if (cd.type === 'command') {
+      const cost = cd.cost || 0;
+      return v.me.ap < cost
+        ? ('费用 ' + cost + '，行动点不够（现在 ' + v.me.ap + '）。')
+        : ('费用 ' + cost + '：可以直接打出。');
+    }
+    if ((cd.level || 1) === 1) {
+      const cost = deployCost(cd);
+      return v.me.ap < cost
+        ? ('可部署，但行动点不够（需要 ' + cost + '，现在 ' + v.me.ap + '）。')
+        : ('可部署（消耗 ' + cost + ' 行动点）：点一个空部署槽。');
+    }
+    const recs = (S.cfg.upgradeRecipes || {})[cd.level] || [];
+    const recTxt = recs.map((r) => Object.keys(r).map((lv) => ROMAN[Number(lv)] + '×' + r[lv]).join('+')).join(' 或 ');
+    const ok = matchRecipe(cd.level, selectedMats());
+    return '升变需要 ' + (recTxt || '未配置配方') +
+      '；已选材料：' + (selectedMats().map((u) => ROMAN[u.level]).join('+') || '无') +
+      (ok ? '，可以升变。' : '。');
+  }
+
+  function renderCardDetail() {
+    const box = $('cardDetail');
+    if (!box) return;
+    const src = detailSource();
+    if (!src) {
+      box.classList.add('hidden');
+      box.innerHTML = '';
+      return;
+    }
+    box.classList.remove('hidden');
+    box.innerHTML = '';
+
+    const prev = E('div', 'cd-preview');
+    prev.appendChild(buildCard(src.cd, src.unit || null, {}));
+    box.appendChild(prev);
+
+    const body = E('div', 'cd-body');
+    const head = E('div', 'cd-head');
+    head.appendChild(E('span', 'cd-name', src.cd.name));
+    const bits = [];
+    if (src.cd.type === 'command') {
+      bits.push('指令', '费用 ' + (src.cd.cost == null ? 0 : src.cd.cost));
+    } else {
+      const lv = src.unit ? src.unit.level : (src.cd.level || 1);
+      const atk = src.unit ? src.unit.atk : (src.cd.atk || 0);
+      const hp = src.unit ? src.unit.hp : (src.cd.hp || 0);
+      const dur = src.unit ? src.unit.dur : src.cd.dur;
+      bits.push('单位 ' + (ROMAN[lv] || ''), '攻 ' + atk + ' / 血 ' + hp + (dur == null ? '' : ' / 耐 ' + dur));
+      if (src.unit && src.unit.stunned) bits.push('眩晕中');
+      if (src.unit && src.unit.sick) bits.push('部署当回合');
+    }
+    head.appendChild(E('span', 'cd-meta', bits.join(' · ')));
+    body.appendChild(head);
+
+    const kw = (src.unit ? src.unit.kw : src.cd.kw) || {};
+    const keys = Object.keys(kw);
+    if (keys.length) {
+      const kwBox = E('div', 'cd-kws');
+      keys.forEach((k) => {
+        const val = kw[k];
+        const row = E('div', 'cd-kw-row');
+        row.appendChild(E('span', 'cd-kw-name', (S.kwText[k] || k) + (typeof val === 'number' ? ' ' + val : '')));
+        const desc = kwDescOf(k);
+        if (desc) row.appendChild(E('span', 'cd-kw-desc', desc));
+        kwBox.appendChild(row);
+      });
+      body.appendChild(kwBox);
+    }
+
+    body.appendChild(E('div', 'cd-text', src.cd.text || '这张牌没有额外说明。'));
+    body.appendChild(E('div', 'cd-act', detailAction(src)));
+    box.appendChild(body);
+  }
+
+  /* ---------------- 卡组说明（进入对局后随时可看） ---------------- */
+
+  function deckRow(d, n) {
+    const row = E('div', 'deck-row');
+    const top = E('div', 'dr-top');
+    top.appendChild(E('span', 'dr-lv', d.type === 'command' ? '指令' : (ROMAN[d.level] || '')));
+    top.appendChild(E('span', 'dr-name', d.name));
+    if (n > 1) top.appendChild(E('span', 'dr-count', '×' + n));
+    const stat = d.type === 'command'
+      ? '费用 ' + (d.cost == null ? 0 : d.cost)
+      : ('攻 ' + (d.atk || 0) + ' / 血 ' + (d.hp || 0) + (d.dur == null ? '' : ' / 耐 ' + d.dur));
+    top.appendChild(E('span', 'dr-stat', stat));
+    row.appendChild(top);
+
+    const kw = d.kw || {};
+    const keys = Object.keys(kw);
+    if (keys.length) {
+      const kwBox = E('div', 'dr-kw');
+      keys.forEach((k) => {
+        const val = kw[k];
+        kwBox.appendChild(E('span', 'dr-kwchip', (S.kwText[k] || k) + (typeof val === 'number' ? ' ' + val : '')));
+      });
+      row.appendChild(kwBox);
+    }
+    if (d.text) row.appendChild(E('div', 'dr-text', d.text));
+    return row;
+  }
+
+  function openDeckInfo() {
+    const v = S.view;
+    if (!v || !v.me) return;
+    if (v.spectator) { toast('观战中不能看卡组说明', true); return; }
+    const deck = S.decks.find((d) => d.id === v.me.deckId);
+    if (!deck) { toast('这一局没有卡组信息', true); return; }
+
+    const box = $('overlayCard');
+    box.innerHTML = '';
+    box.appendChild(E('h2', null, deck.name));
+    if (deck.desc) box.appendChild(E('p', null, deck.desc));
+
+    const units = (deck.units || []).slice().sort((a, b) => ((def(a[0]).level || 9) - (def(b[0]).level || 9)));
+    const unitCount = units.reduce((s, x) => s + x[1], 0);
+    box.appendChild(E('h3', 'deck-h', '单位 · ' + unitCount + ' 张'));
+    const wrapU = E('div', 'deck-rows');
+    units.forEach(([cid, n]) => wrapU.appendChild(deckRow(def(cid), n)));
+    box.appendChild(wrapU);
+
+    box.appendChild(E('h3', 'deck-h', '指令 · ' + (deck.commands || []).length + ' 张'));
+    const wrapC = E('div', 'deck-rows');
+    (deck.commands || []).forEach((cid) => wrapC.appendChild(deckRow(def(cid), 1)));
+    box.appendChild(wrapC);
+
+    const used = [];
+    const noteKw = (cid) => Object.keys(def(cid).kw || {}).forEach((k) => { if (used.indexOf(k) < 0) used.push(k); });
+    units.forEach(([cid]) => noteKw(cid));
+    (deck.commands || []).forEach(noteKw);
+    if (used.length) {
+      box.appendChild(E('h3', 'deck-h', '关键词'));
+      const kwBox = E('div', 'deck-kws');
+      used.forEach((k) => {
+        const row = E('div', 'cd-kw-row');
+        row.appendChild(E('span', 'cd-kw-name', S.kwText[k] || k));
+        row.appendChild(E('span', 'cd-kw-desc', kwDescOf(k) || '（还没写释义）'));
+        kwBox.appendChild(row);
+      });
+      box.appendChild(kwBox);
+    }
+
+    const row = E('div', 'row');
+    const close = E('button', 'btn small', '关闭');
+    close.onclick = closeOverlay;
+    row.appendChild(close);
+    box.appendChild(row);
+
+    S.overlayMode = 'deck';
+    $('overlay').classList.add('wide');
+    $('overlay').classList.remove('hidden');
   }
 
   function renderMid() {
@@ -815,11 +1014,13 @@
     row.appendChild(close);
     box.appendChild(row);
     S.overlayMode = 'zone';
+    $('overlay').classList.remove('wide');
     $('overlay').classList.remove('hidden');
   }
 
   function closeOverlay() {
     $('overlay').classList.add('hidden');
+    $('overlay').classList.remove('wide');
     S.overlayMode = '';
   }
 
@@ -914,7 +1115,8 @@
   $('table').addEventListener('click', (e) => {
     if (!S.view) return;
     if (e.target.closest('.card') || e.target.closest('.slot') || e.target.closest('.mid-actions') ||
-        e.target.closest('.foe-panel') || e.target.closest('.my-panel') || e.target.closest('.log-panel')) return;
+        e.target.closest('.foe-panel') || e.target.closest('.my-panel') || e.target.closest('.log-panel') ||
+        e.target.closest('.card-detail') || e.target.closest('.hint-bar')) return;
     if (S.sel || S.cmd) { clearSel(); renderTable(); }
   });
 
@@ -957,6 +1159,12 @@
   const ruleBtn = E('button', 'btn ghost small', '规则');
   ruleBtn.onclick = openRules;
   topRight.insertBefore(ruleBtn, $('connDot'));
+
+  const deckBtn = E('button', 'btn ghost small hidden', '卡组说明');
+  deckBtn.id = 'deckInfoBtn';
+  deckBtn.title = '查看本卡组的全部卡牌与说明';
+  deckBtn.onclick = openDeckInfo;
+  topRight.insertBefore(deckBtn, $('connDot'));
 
   /* ---------------- 启动 ---------------- */
 
