@@ -104,7 +104,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\get-node.ps1
 | 改某张卡的数值 | `cards.js` 里找到卡 → 改 `atk/hp/cost` 等 → `export_cards.js` → `sim.js 40` |
 | 加一张卡 | `cards.js` 里按现有对象结构加 → 加进对应卡组 id 列表 → 加断言 → 重新生成卡表 |
 | 加一套卡组 | `cards.js` 加卡 + 加 `decks` 条目 → `server.js` 的卡组下拉是读 `decks` 的，无需改前端 → 跑 sim |
-| 加一个关键词机制 | `engine/engine.js` 加结算分支（搜索现有 `kw.` 用法）→ `cards.js` 加中文名 → `rules_new.js` 补断言 |
+| 加一个关键词机制 | `engine/engine.js` 加结算分支（搜索现有 `kw.` 用法）→ `cards.js` 的 `KW_TEXT` 与 `KW_DESC` 各加一条（`KW_DESC` 是给「卡牌详情 / 卡组说明」看的释义，漏了界面会出现"（还没写释义）"）→ `rules_new.js` 补断言 |
 | 调平衡 | 先跑 `sim.js` 收集胜率，再改 `cards.js` 数值，再跑对比；**数值变更需人工确认** |
 | 改界面 | `public/` 三个文件；改完跑 `test/cdp.js` 出图对比 |
 | 加联机功能 | `server.js`（房间/座位/广播）+ `public/app.js`（前端）+ `test/net.js`（断言） |

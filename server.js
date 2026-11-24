@@ -268,6 +268,7 @@ function handle(ws, raw) {
       token: ws.token,
       cards: CARD_DATA.cards,
       kwText: CARD_DATA.KW_TEXT,
+      kwDesc: CARD_DATA.KW_DESC,
       decks: DECKS,
       config: CONFIG
     });

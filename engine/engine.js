@@ -1223,6 +1223,7 @@ class Game {
     return {
       id: p.id,
       name: p.name,
+      deckId: p.deckId,
       life: p.life,
       ap: p.ap,
       deckCount: p.deck.length,
