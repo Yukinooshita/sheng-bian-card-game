@@ -1,5 +1,10 @@
 # 升变卡牌 · 可联机原型 v0.1
 
+[![tests](https://github.com/Yukinooshita/sheng-bian-card-game/actions/workflows/test.yml/badge.svg)](https://github.com/Yukinooshita/sheng-bian-card-game/actions/workflows/test.yml)
+[![release](https://img.shields.io/github/v/release/Yukinooshita/sheng-bian-card-game?label=下载)](https://github.com/Yukinooshita/sheng-bian-card-game/releases)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 一个按手写规则做成的 1v1 卡牌对战原型：**浏览器打开就能打**，两个人在不同设备上联机，规则数值与卡池都能自己改。零依赖，服务端权威，带机器人自测和观战。
 
 ![牌桌](docs/screenshots/table.png)
@@ -17,13 +22,30 @@
 
 ## 快速开始
 
-### 方式一：双击开服（Windows，最省事）
+### 方式一：下载整合包（Windows，最省事）
 
-1. 双击 **`启动游戏.bat`**，窗口里会打印本机与局域网网址。
-2. 浏览器打开 `http://localhost:8080`。
-3. 一个人先试：开两个标签页，一个"创建房间"，另一个输房间码"加入"，各自选卡组 → 准备 → 开局。
+到 [**Releases**](https://github.com/Yukinooshita/sheng-bian-card-game/releases) 下载 `sheng-bian-v0.1.0-win-x64.zip`（已内置 Node 运行时，解压即玩）：
 
-### 方式二：用系统 Node
+1. 解压到任意位置（别只解压到 C 盘根目录）。
+2. 双击 **`启动游戏.bat`**，窗口里会打印本机与局域网网址。
+3. 浏览器打开 `http://localhost:8080`。
+4. 一个人先试：开两个标签页，一个"创建房间"，另一个输房间码"加入"，各自选卡组 → 准备 → 开局。
+
+### 方式二：clone 仓库 / 用 GitHub 下载源码
+
+```bash
+git clone https://github.com/Yukinooshita/sheng-bian-card-game.git
+```
+
+`runtime/node.exe` **不在仓库里**（83MB 会让 clone 很难受，也不适合入库）。第一次双击 `启动游戏.bat` 时，它会自动调用 `get-node.ps1` 下载一次免安装 Node（约 34MB）到 `runtime/`，之后就不再下载。
+
+也可以手动跑：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\get-node.ps1
+```
+
+### 方式三：用系统 Node
 
 ```bash
 node server.js 8080      # 或 npm start
@@ -98,8 +120,10 @@ node server.js 8080      # 或 npm start
 
 ```
 升变卡牌/
-├─ 启动游戏.bat          Windows 双击即开服务器
+├─ 启动游戏.bat          Windows 双击即开服务器（缺 Node 时自动下载）
 ├─ 自测.bat              改完规则跑一遍
+├─ get-node.ps1          下载免安装 Node 到 runtime/（runtime 不入库）
+├─ AGENTS.md             给 AI 编码助手的项目约定（Cursor/Claude Code/Codex 会自动读）
 ├─ server.js             零依赖 HTTP + WebSocket：房间、座位、观战、重连
 ├─ engine/
 │  ├─ config.js          所有数值（生命/行动点/槽位/抽牌/耐久/升变配方/取整）
@@ -116,7 +140,7 @@ node server.js 8080      # 或 npm start
 │  ├─ net.js             真联机端到端 + 观战
 │  ├─ cdp.js             无头 Edge 截图验收（需本机 Edge）
 │  └─ export_cards.js    生成 卡表.md
-├─ runtime/node.exe      自带 Node（免安装，Windows）
+├─ runtime/node.exe      本地运行时（git 忽略，首次运行自动下载）
 ├─ docs/screenshots/     README 用截图
 ├─ 规则原文整理.md        手写笔记的文字版 + 取舍说明
 ├─ 使用说明.md            怎么开、怎么联机、异地怎么办、怎么发给别人
@@ -155,6 +179,14 @@ CI：每次 push / PR 都会在 GitHub Actions 里跑上面四条（`.github/wor
 4. 提交前 `npm test`，挂了不合
 
 想加的功能可以从 Issues 里挑，或者直接开个 Issue 说"我想加 XX 卡组 / XX 关键词"。
+
+### 想让 AI 帮你改
+
+仓库根目录的 **`AGENTS.md`** 就是写给 AI 看的：项目定位、目录职责、零依赖 / 零构建的硬约束、测试验收线、代码风格、不能碰的文件、常见任务的下手步骤。Cursor / Claude Code / Codex / Copilot 会自动读它，AI 就不会乱引依赖或者顺手把框架换了。
+
+一句话开局：
+
+> 读 `AGENTS.md`，然后帮我改 xxx。先给方案和改动清单，别直接改代码；改完跑 `test/rules.js`、`test/rules_new.js`、`test/sim.js 40`，把输出贴给我。
 
 ---
 

@@ -1,6 +1,9 @@
 # 依赖（本项目零依赖，留个保险）
 node_modules/
 
+# 免安装 Node 运行时（83MB，不入库；用 get-node.ps1 或 Release 获取）
+/runtime/
+
 # 测试临时产物
 test/edge_profile/
 test/*.png

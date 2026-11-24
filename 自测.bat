@@ -7,6 +7,14 @@ set "NODE_EXE="
 if exist "runtime\node.exe" set "NODE_EXE=runtime\node.exe"
 if not defined NODE_EXE set "NODE_EXE=node"
 
+where node >nul 2>nul
+if errorlevel 1 if not exist "runtime\node.exe" (
+  echo.
+  echo  Node runtime not found. Run get-node.ps1 first, or install Node.js.
+  pause
+  exit /b 1
+)
+
 echo.
 echo  [1/4] rules unit test
 "%NODE_EXE%" test\rules.js
