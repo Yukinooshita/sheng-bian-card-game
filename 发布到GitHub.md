@@ -132,16 +132,37 @@ npm test                    # 41 + 44 条断言 + 机器人 + 联机
 **push 卡住 / 报 `Recv failure: Connection was reset` / `Operation timed out`**
 这台机器到 `github.com` 的连接会被掐断：能连上、传几百 KB 就断。实测：
 `api.github.com`、`codeload.github.com`、`raw.githubusercontent.com` 正常，`github.com` 超时，`ssh.github.com:443` 能连通。
-解决办法：开加速器 / VPN 后再推，或走上面的 SSH 443 方案。`runtime/node.exe` 有 83 MB，在这条链路上本身就很难推上去。
+解决办法：开加速器 / VPN 后再推（带 `-c http.sslVerify=false`），或走上面的 SSH 443 方案。
 
-**想减小推送体积（不要 83 MB 的 node.exe）**
-```bash
-git rm -r --cached runtime
-echo runtime/ >> .gitignore
-git commit -m "chore: runtime 不入库"
-git push -u origin main
-```
-之后 Release 里传一个整合包给别人下载即可。
+**大文件 / 运行时（已处理）**
+`runtime/node.exe`（83 MB）**已经移出仓库**，历史也用 `git filter-branch --index-filter` 重写过，现在全新 clone 只有约 1 MB。
+需要本地运行时：
+
+- 双击 `启动游戏.bat`，它会自动调 `get-node.ps1` 下载（34 MB，一次）
+- 或直接下 [Releases](https://github.com/Yukinooshita/sheng-bian-card-game/releases) 里的整合包，已内置运行时
+
+> 注：GitHub 那边的仓库体积统计（32 MB 左右）要等平台自己回收不可达对象后才会降下来，新 clone 不受影响。
+
+---
+
+## 7. 发新版本（Release）
+
+整合包已经发过 `v0.1.0`。改到值得发一版时：
+
+1. 本地打包（在项目根目录，PowerShell）：
+
+   ```powershell
+   Compress-Archive -Path 启动游戏.bat,自测.bat,server.js,engine,public,runtime,README.md,使用说明.md,修改指南.md,卡表.md,LICENSE -DestinationPath "$pwd\sheng-bian-v0.2.0-win-x64.zip" -CompressionLevel Optimal
+   ```
+
+2. 打 tag 并推上去：
+
+   ```bash
+   git tag -a v0.2.0 -m "v0.2.0"
+   git -c http.sslVerify=false push origin v0.2.0
+   ```
+
+3. 网页 Releases → Draft a new release → 选 `v0.2.0` → 填标题/说明 → 把 zip 拖进附件 → Publish。
 
 **push 报 `src refspec main does not match any`**
 先 `git log --oneline` 确认有提交、`git branch --show-current` 确认是 `main`。
