@@ -7,7 +7,7 @@
 
 一个按手写规则做成的 1v1 卡牌对战原型：**浏览器打开就能打**，两个人在不同设备上联机，规则数值与卡池都能自己改。零依赖，服务端权威，带机器人自测和观战。
 
-![牌桌](docs/screenshots/table.png)
+![牌桌](docs/screenshots/table.webp)
 
 - **不需要 `npm install`**：只用 Node 自带模块（HTTP + 自己写的 WebSocket）
 - **不需要上架**：双击 `启动游戏.bat` 就是一台服务器，网址发给朋友就开局
@@ -16,7 +16,7 @@
 
 | 观战 | 手机 |
 | --- | --- |
-| ![观战](docs/screenshots/spectate.png) | ![手机](docs/screenshots/mobile.png) |
+| ![观战](docs/screenshots/spectate.webp) | ![手机](docs/screenshots/mobile.webp) |
 
 ---
 

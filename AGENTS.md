@@ -125,4 +125,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\get-node.ps1
 3. 人机对战（`test/sim.js` 的机器人逻辑可直接搬进 `engine`）。
 4. 悔棋 / 回放（服务端权威，记录 action 序列即可实现）。
 5. 观战者聊天、房间码自定义。
-6. `docs/screenshots/` 三张 PNG 共 884KB，可压成 webp 瘦身。
+6. `docs/screenshots/` 三张配图已压成 webp（共约 170KB），界面大改后重新截图再压一次，别传原始 PNG。
